@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from utils import MyScriptError
+from utils import MyScriptError, check_skin_writability
 import elementtree.ElementTree as ET
 
 
@@ -22,6 +22,7 @@ class FontManager:
     
     
     def __init__(self):
+        check_skin_writability()
         self.__installed_fonts = []
     
     
