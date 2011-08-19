@@ -5,6 +5,7 @@ Created on 09/08/2011
 '''
 import os
 import sys
+import time
 import xbmc, xbmcgui
 import shutil
 
@@ -16,6 +17,22 @@ class MyScriptError(Exception):
 
 def reload_skin():
     xbmc.executebuiltin("XBMC.ReloadSkin()")
+
+
+def try_remove_file(file, wait=0.5, tries=10):
+    removed = False
+    num_try = 0
+    
+    while num_try < tries and not removed:
+        try:
+            os.remove(file)
+            return True
+        
+        except OSError:
+            num_try += 1
+            time.sleep(wait)
+    
+    return False
 
 
 def check_skin_writability():

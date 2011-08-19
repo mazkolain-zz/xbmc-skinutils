@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from utils import MyScriptError, check_skin_writability
+from utils import MyScriptError, check_skin_writability, reload_skin, try_remove_file
 import elementtree.ElementTree as ET
 
 
@@ -18,12 +18,14 @@ class FontXmlError(MyScriptError):
 
 class FontManager:
     __installed_names = None
+    __installed_fonts = None
     __font_xml_docs = None
     
     
     def __init__(self):
         check_skin_writability()
         self.__installed_names = []
+        self.__installed_fonts = []
     
     
     def _build_font_xml_dict(self):
@@ -68,6 +70,10 @@ class FontManager:
         return name in self.__installed_names
     
     
+    def is_font_installed(self, file):
+        return file in self.__installed_fonts
+    
+    
     def _get_font_attr(self, node, name):
         attrnode = node.find(name)
         if attrnode is not None:
@@ -82,7 +88,10 @@ class FontManager:
         #TODO: Unix systems could use symlinks
         
         #Check if it's already there
-        if not os.path.isfile(dest_file):
+        if dest_file not in self.__installed_fonts:
+            self.__installed_fonts.append(dest_file)
+            
+            #Overwrite if file exists
             shutil.copyfile(file, dest_file)
     
     
@@ -183,7 +192,7 @@ class FontManager:
         pass
     
     
-    def remove_installed_fonts(self, commit=True):
+    def remove_installed_names(self, commit=True):
         for font_doc in self._get_font_xml_docs().values():
             root = font_doc.getroot()
             for fontset in root.findall("fontset"):
@@ -196,5 +205,18 @@ class FontManager:
             self.commit()
     
     
+    def remove_installed_fonts(self):
+        for item in self.__installed_fonts:
+            if not try_remove_file(item):
+                xbmc.log(
+                    "Failed removing font file '%s'. XBMC may still be using it.",
+                    xbmc.LOGWARNING
+                )
+    
+    
     def __del__(self):
+        self.remove_installed_names()
+        
+        #Reload skin so font files are no longer in use
+        reload_skin()
         self.remove_installed_fonts()
