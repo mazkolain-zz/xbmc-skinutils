@@ -17,13 +17,13 @@ class FontXmlError(MyScriptError):
 
 
 class FontManager:
-    __installed_fonts = None
+    __installed_names = None
     __font_xml_docs = None
     
     
     def __init__(self):
         check_skin_writability()
-        self.__installed_fonts = []
+        self.__installed_names = []
     
     
     def _build_font_xml_dict(self):
@@ -64,8 +64,8 @@ class FontManager:
         return font_xml_docs[file]
     
     
-    def is_font_installed(self, name):
-        return name in self.__installed_fonts
+    def is_name_installed(self, name):
+        return name in self.__installed_names
     
     
     def _get_font_attr(self, node, name):
@@ -99,7 +99,7 @@ class FontManager:
                 if name is None:
                     raise FontXmlError("Malformed XML: No name for font definition.")
                 
-                elif not self.is_font_installed(name):
+                elif not self.is_name_installed(name):
                     self.add_font(
                         name,
                         os.path.join(font_path, self._get_font_attr(item, "filename")),
@@ -128,12 +128,12 @@ class FontManager:
         if len(font_xml_files) == 0:
             xbmc.log("Cannot add_font(). Current skin has no font definition files!")
         
-        elif self.is_font_installed(name):
+        elif self.is_name_installed(name):
             xbmc.log("Font name '%s' was already installed, skipping." % name)
         
         else:
             #Add it to the registry
-            self.__installed_fonts.append(name)
+            self.__installed_names.append(name)
             
             #Iterate over all skin font files
             for font_xml in font_xml_files:
@@ -189,7 +189,7 @@ class FontManager:
             for fontset in root.findall("fontset"):
                 for fontdef in fontset.findall("font"):
                     name = self._get_font_attr(fontdef, "name")
-                    if name in self.__installed_fonts:
+                    if name in self.__installed_names:
                         fontset.remove(fontdef)
         
         if commit:
