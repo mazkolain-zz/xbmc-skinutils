@@ -74,15 +74,16 @@ class FontManager:
             return attrnode.text
     
     
-    def _copy_font_file(self, file_path):
+    def _copy_font_file(self, file):
         skin_font_path = xbmc.translatePath("special://skin/fonts/")
+        file_name = os.path.basename(file)
+        dest_file = os.path.join(skin_font_path, file_name)
         
         #TODO: Unix systems could use symlinks
         
         #Check if it's already there
-        if not os.path.isfile(file_path):
-            dest = os.path.join(skin_font_path, os.path.basename(file_path))
-            shutil.copyfile(file_path, dest)
+        if not os.path.isfile(dest_file):
+            shutil.copyfile(file, dest_file)
     
     
     def install_file(self, path, font_path, commit=True):
