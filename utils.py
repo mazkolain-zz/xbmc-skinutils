@@ -11,7 +11,7 @@ import shutil
 
 
 
-class MyScriptError(Exception):
+class SkinUtilsError(Exception):
     pass
 
 

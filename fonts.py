@@ -6,12 +6,12 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from utils import MyScriptError, check_skin_writability, reload_skin, try_remove_file
+from utils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file
 import elementtree.ElementTree as ET
 
 
 
-class FontXmlError(MyScriptError):
+class FontXmlError(SkinUtilsError):
     pass
 
 
@@ -218,5 +218,5 @@ class FontManager:
         self.remove_installed_names()
         
         #Reload skin so font files are no longer in use
-        reload_skin()
+        #reload_skin()
         self.remove_installed_fonts()
