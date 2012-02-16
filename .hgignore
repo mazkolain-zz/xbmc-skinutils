@@ -1,0 +1,11 @@
+
+syntax: regexp
+^dist$
+syntax: regexp
+^build$
+syntax: regexp
+^src/XbmcSkinUtils\.egg-info$
+syntax: regexp
+^\.project$
+syntax: regexp
+^\.pydevproject$
