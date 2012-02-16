@@ -113,10 +113,8 @@ def check_skin_writability():
     
     #Check if it's not writable at all
     if not os.access(skin_path, os.W_OK):
-        print 'write test #1 fail'
         copy_skin_to_userdata()
     
     #Vista's UAC may be lying to us. Do a real write operation
     elif not do_write_test(skin_path):
-        print 'write test #2 fail'
         copy_skin_to_userdata()
