@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from utils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file
+from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file
 import elementtree.ElementTree as ET
 
 
