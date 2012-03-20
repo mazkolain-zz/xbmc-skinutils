@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import elementtree.ElementTree as ET
-from skinutils import SkinUtilsError, check_skin_writability
+from skinutils import SkinUtilsError, check_skin_writability, make_backup, restore_backup
 
 
 
@@ -86,20 +86,14 @@ class IncludeManager:
     
     
     def commit(self):
-        for file,doc in self._get_includes().items():
-            doc.write(file)
+        for xml_file, doc in self._get_includes().items():
+            make_backup(xml_file)
+            doc.write(xml_file)
     
     
     def remove_installed_names(self, commit=True):
-        for item in self._get_includes().keys():
-            doc = self._get_include_xml(item)
-            root = doc.getroot()
-            for node in root.findall("include"):
-                if node.get("name") in self.__installed_names:
-                    root.remove(node)
-        
-        if commit:
-            self.commit()
+        for xml_file in self._get_includes().keys():
+            restore_backup(xml_file)
     
     
     def __del__(self):

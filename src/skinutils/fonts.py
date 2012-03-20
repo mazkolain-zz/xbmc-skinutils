@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file
+from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, make_backup, restore_backup
 import elementtree.ElementTree as ET
 
 
@@ -184,8 +184,9 @@ class FontManager:
     
     
     def commit(self):
-        for file,doc in self._get_font_xml_docs().items():
-            doc.write(file)
+        for xml_file,doc in self._get_font_xml_docs().items():
+            make_backup(xml_file)
+            doc.write(xml_file)
     
     
     def remove_font(self, name):
@@ -193,16 +194,8 @@ class FontManager:
     
     
     def remove_installed_names(self, commit=True):
-        for font_doc in self._get_font_xml_docs().values():
-            root = font_doc.getroot()
-            for fontset in root.findall("fontset"):
-                for fontdef in fontset.findall("font"):
-                    name = self._get_font_attr(fontdef, "name")
-                    if name in self.__installed_names:
-                        fontset.remove(fontdef)
-        
-        if commit:
-            self.commit()
+        for xml_file in self._get_font_xml_docs().keys():
+            restore_backup(xml_file)
     
     
     def remove_installed_fonts(self):

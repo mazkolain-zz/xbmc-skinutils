@@ -11,6 +11,7 @@ import sys
 import time
 import xbmc, xbmcgui
 import shutil
+import re
 
 
 
@@ -118,3 +119,18 @@ def check_skin_writability():
     #Vista's UAC may be lying to us. Do a real write operation
     elif not do_write_test(skin_path):
         copy_skin_to_userdata()
+
+
+def make_backup(path):
+    backup_path = path + '~'
+    #If the backup already exists, don't overwrite it
+    if not os.path.exists(backup_path):
+        shutil.copy(path, backup_path)
+
+
+def restore_backup(path):
+    backup_path = path + '~'
+    #Do nothing if no backup exists
+    if os.path.exists(backup_path):
+        os.remove(path)
+        os.rename(backup_path, path)
