@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import elementtree.ElementTree as ET
-from skinutils import SkinUtilsError, check_skin_writability, make_backup, restore_backup
+from skinutils import SkinUtilsError, check_skin_writability, make_backup, restore_backup, case_file_exists
 
 
 
@@ -34,7 +34,11 @@ class IncludeManager:
             dir_path = os.path.join(skin_path, dir_item)
             if os.path.isdir(dir_path):
                 file = os.path.join(dir_path, "includes.xml")
-                if os.path.isfile(file):
+                if case_file_exists(file):
+                    include_list[file] = None
+                
+                file = os.path.join(dir_path, "Includes.xml")
+                if case_file_exists(file):
                     include_list[file] = None
         
         return include_list

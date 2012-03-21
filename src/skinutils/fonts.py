@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, make_backup, restore_backup
+from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, make_backup, restore_backup, case_file_exists
 import elementtree.ElementTree as ET
 
 
@@ -38,14 +38,13 @@ class FontManager:
             if os.path.isdir(dir_path):
                 #Try with font.xml
                 file = os.path.join(dir_path, "font.xml")
-                if os.path.isfile(file):
+                if case_file_exists(file):
                     font_xml_list[file] = None
                 
                 #Don't try the next step on windows, wasted time
-                if os.name != "nt":
-                    file = os.path.join(dir_path, "Font.xml")
-                    if os.path.isfile(file):
-                        font_xml_list[file] = None
+                file = os.path.join(dir_path, "Font.xml")
+                if case_file_exists(file):
+                    font_xml_list[file] = None
         
         return font_xml_list
     

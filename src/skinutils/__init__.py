@@ -7,6 +7,8 @@ __all__ = ["fonts", "includes"]
 
 
 import os
+from os import listdir
+from os.path import isdir, isfile, dirname, basename
 import sys
 import time
 import xbmc, xbmcgui
@@ -37,6 +39,20 @@ def try_remove_file(file, wait=0.5, tries=10):
             time.sleep(wait)
     
     return False
+
+
+def case_file_exists(file):
+    if not os.path.isfile(file):
+        return False
+    
+    else:
+        file_dir = dirname(file)
+        if not isdir(file_dir):
+            return False
+        
+        else:
+            dir_contents = listdir(file_dir)
+            return basename(file) in dir_contents
 
 
 def copy_skin_to_userdata():
