@@ -97,6 +97,10 @@ class IncludeManager:
     
     def remove_installed_names(self, commit=True):
         for xml_file in self._get_includes().keys():
+            #Empty the xml in memory to force a reload later (if needed)
+            self.__includes[xml_file] = None
+            
+            #Restore the original file
             restore_backup(xml_file)
     
     
