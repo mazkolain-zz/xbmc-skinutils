@@ -213,6 +213,6 @@ class FontManager:
     def __del__(self):
         self.remove_installed_names()
         
-        #Reload skin so font files are no longer in use
-        #reload_skin()
+        #Reload skin so font files are no longer in use, and then delete them
+        reload_skin()
         self.remove_installed_fonts()
