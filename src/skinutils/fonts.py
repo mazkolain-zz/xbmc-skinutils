@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, make_backup, restore_backup, case_file_exists
+from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, make_backup, restore_backup, case_file_exists, check_file_sanity
 import elementtree.ElementTree as ET
 
 
@@ -60,6 +60,7 @@ class FontManager:
         font_xml_docs = self.__font_xml_docs
         
         if file in font_xml_docs and font_xml_docs[file] is None:
+            check_file_sanity(file)
             font_xml_docs[file] = ET.parse(file)
         
         return font_xml_docs[file]

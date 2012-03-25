@@ -150,3 +150,26 @@ def restore_backup(path):
     if os.path.exists(backup_path):
         os.remove(path)
         os.rename(backup_path, path)
+
+
+def has_invalid_xml_comments(contents):
+    pattern = re.compile('<!--(.*?)-->', re.MULTILINE | re.DOTALL)
+    group_pattern = re.compile('^-|--|-$')
+    for match in re.finditer(pattern, contents):
+        if re.match(group_pattern, match.group(1)) is not None:
+            return True
+
+
+def sanitize_xml(file, contents):
+    p = re.compile('<!--.*?-->', re.MULTILINE | re.DOTALL)
+    clean_contents, num_repl = re.subn(p, '', contents)
+    open(file, 'w').write(clean_contents)
+
+
+def check_file_sanity(file):
+    contents = open(file, 'r').read()
+        
+    #Check if the file has invalid comments
+    if has_invalid_xml_comments(contents):
+        make_backup(file)
+        sanitize_xml(file, contents)

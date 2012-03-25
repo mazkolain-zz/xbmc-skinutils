@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import elementtree.ElementTree as ET
-from skinutils import SkinUtilsError, check_skin_writability, make_backup, restore_backup, case_file_exists
+from skinutils import SkinUtilsError, check_skin_writability, make_backup, restore_backup, case_file_exists, check_file_sanity
 
 
 
@@ -53,6 +53,7 @@ class IncludeManager:
     
     def _get_include_xml(self, file):
         if file in self.__includes and self.__includes[file] is None:
+            check_file_sanity(file)
             self.__includes[file] = ET.parse(file)
         
         return self.__includes[file]
