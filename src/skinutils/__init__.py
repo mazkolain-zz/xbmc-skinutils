@@ -55,19 +55,22 @@ def case_file_exists(file):
             return basename(file) in dir_contents
 
 
-def copy_skin_to_userdata():
-    #Get the skin's path
-    skin_path = xbmc.translatePath("special://skin/")
-    
-    #Get user profile's addon folder
+def get_current_skin_path():
+    return os.path.normpath(xbmc.translatePath("special://skin/"))
+
+
+def get_skin_name():
+    return os.path.basename(get_current_skin_path())
+
+
+def get_local_skin_path():
     user_addons_path = xbmc.translatePath("special://home/addons")
-    
-    #Remove end slash with normpath()
-    skin_name = os.path.basename(os.path.normpath(skin_path))
-    
-    #Build skin dest name
-    skin_dest_path = os.path.join(user_addons_path, skin_name)
-    
+    return os.path.normpath(
+        os.path.join(user_addons_path, get_skin_name())
+    )
+
+
+def copy_skin_to_userdata():
     #Warn user before doing this weird thing
     d = xbmcgui.Dialog()
     msg1 = "This addon needs to install some extra resources."
@@ -78,31 +81,24 @@ def copy_skin_to_userdata():
         sys.exit(1)
     
     else:
+        #Get skin dest name
+        local_skin_path = get_local_skin_path()
+        
         #If it was not copied before...
-        if not os.path.exists(skin_dest_path):
-            shutil.copytree(skin_path, skin_dest_path)
+        if not os.path.exists(local_skin_path):
+            shutil.copytree(get_current_skin_path(), local_skin_path)
             #xbmc.executebuiltin("RestartApp")
             sys.exit(1)
 
 
 #Skin was copied but XBMC was not restarted
 def check_needs_restart():
-    #Get the skin's path
-    skin_path = os.path.normpath(xbmc.translatePath("special://skin/"))
+    #Get skin paths
+    current_skin_path = get_current_skin_path()
+    local_skin_path = get_local_skin_path()
     
-    #Remove end slash with normpath()
-    skin_name = os.path.basename(os.path.normpath(skin_path))
-    
-    #Get user profile's addon folder
-    user_addons_path = xbmc.translatePath("special://home/addons")
-    
-    #Build skin dest name
-    skin_dest_path = os.path.normpath(
-        os.path.join(user_addons_path, skin_name)
-    )
-    
-    #Dest path exists and does not match current skin path, restart.
-    if os.path.isdir(skin_dest_path) and skin_path != skin_dest_path:
+    #Local skin exists and does not match current skin path, restart.
+    if os.path.isdir(local_skin_path) and current_skin_path != local_skin_path:
         d = xbmcgui.Dialog()
         d.ok("Notice", "Restart XBMC to complete the installation.")
         sys.exit(1)
@@ -126,7 +122,7 @@ def check_skin_writability():
     check_needs_restart()
     
     #Get the current skin's path
-    skin_path = xbmc.translatePath("special://skin/")
+    skin_path = get_current_skin_path()
     
     #Check if it's not writable at all
     if not os.access(skin_path, os.W_OK):
