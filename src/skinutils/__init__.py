@@ -117,6 +117,10 @@ def do_write_test(path):
         return False
 
 
+def skin_is_local():
+    return get_current_skin_path() == get_local_skin_path()
+
+
 def check_skin_writability():
     #Check if XBMC needs a restart
     check_needs_restart()
@@ -126,6 +130,10 @@ def check_skin_writability():
     
     #Check if it's not writable at all
     if not os.access(skin_path, os.W_OK):
+        copy_skin_to_userdata()
+    
+    #Check if it's local or not (contained in userdata)
+    elif not skin_is_local():
         copy_skin_to_userdata()
     
     #Vista's UAC may be lying to us. Do a real write operation
