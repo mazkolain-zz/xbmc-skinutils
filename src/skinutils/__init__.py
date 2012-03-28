@@ -25,6 +25,10 @@ def reload_skin():
     xbmc.executebuiltin("XBMC.ReloadSkin()")
 
 
+def debug_log(msg):
+    xbmc.log(msg, xbmc.LOGDEBUG)
+
+
 def try_remove_file(file, wait=0.5, tries=10):
     removed = False
     num_try = 0
@@ -122,6 +126,11 @@ def skin_is_local():
 
 
 def check_skin_writability():
+    #Some debug info
+    debug_log("-- skinutils debug info --")
+    debug_log("current skin path: %s\n" % get_current_skin_path())
+    debug_log("local path should be: %s" % get_local_skin_path())
+    
     #Check if XBMC needs a restart
     check_needs_restart()
     
