@@ -128,17 +128,15 @@ def check_skin_writability():
     #Get the current skin's path
     skin_path = get_current_skin_path()
     
-    #Check if it's not writable at all
-    if not os.access(skin_path, os.W_OK):
-        copy_skin_to_userdata()
-    
     #Check if it's local or not (contained in userdata)
-    elif not skin_is_local():
+    if not skin_is_local():
         copy_skin_to_userdata()
     
-    #Vista's UAC may be lying to us. Do a real write operation
-    elif not do_write_test(skin_path):
-        copy_skin_to_userdata()
+    #Check if this path is writable
+    elif not os.access(skin_path, os.W_OK) or not do_write_test(skin_path):
+        d = xbmcgui.Dialog()
+        d.ok("Fatal Error", "Skin directory is not writable.")
+        sys.exit(2)
 
 
 def make_backup(path):
