@@ -14,6 +14,7 @@ import time
 import xbmc, xbmcgui
 import shutil
 import re
+from datetime import datetime
 
 
 
@@ -27,6 +28,31 @@ def reload_skin():
 
 def debug_log(msg):
     xbmc.log(msg, xbmc.LOGDEBUG)
+
+
+def get_sha1_obj():
+    #SHA1 lib 2.4 compatibility
+    try:
+        from hashlib import sha1
+        return sha1()
+    except:
+        import sha
+        return sha.new()
+
+
+def sha1_file(file, block_size=2**20):
+    f = open(file, 'rb')
+    sha1 = get_sha1_obj()
+    
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        sha1.update(data)
+    
+    f.close()
+    
+    return sha1.hexdigest()
 
 
 def try_remove_file(file, wait=0.5, tries=10):
@@ -74,25 +100,70 @@ def get_local_skin_path():
     )
 
 
-def copy_skin_to_userdata():
+def copy_skin_to_userdata(ask_user=True):
     #Warn user before doing this weird thing
     d = xbmcgui.Dialog()
     msg1 = "This addon needs to install some extra resources."
     msg2 = "This installation requires a manual XBMC restart."
     msg3 = "Begin installation now? After that it will exit."
     
-    if not d.yesno("Notice", msg1, msg2, msg3):
-        sys.exit(1)
+    make_copy = (
+        not ask_user or
+        d.yesno("Notice", msg1, msg2, msg3)
+    )
     
-    else:
+    if make_copy:
         #Get skin dest name
         local_skin_path = get_local_skin_path()
         
         #If it was not copied before...
         if not os.path.exists(local_skin_path):
             shutil.copytree(get_current_skin_path(), local_skin_path)
-            #xbmc.executebuiltin("RestartApp")
-            sys.exit(1)
+    
+    return make_copy
+
+
+def is_invalid_local_skin():
+    #Get skin paths
+    current_skin_path = get_current_skin_path()
+    local_skin_path = get_local_skin_path()
+    
+    #If the local path does not exist
+    if not os.path.isdir(local_skin_path):
+        return False
+    
+    else:
+        #Get addon xml paths
+        current_xml = os.path.join(current_skin_path, 'addon.xml')
+        local_xml = os.path.join(local_skin_path, 'addon.xml')
+    
+        #Both files must exist
+        if not os.path.isfile(current_xml) or not os.path.isfile(local_xml):
+            return True
+        
+        #If sum of both files mismatch, got it!
+        elif sha1_file(current_xml) != sha1_file(local_xml):
+            return True
+        
+        #Otherwise everything is ok
+        else:
+            return False
+
+
+def fix_invalid_local_skin():
+    local_skin_path = get_local_skin_path()
+    time_suffix = datetime.now().strftime('%Y%m%d%H%M%S')
+    backup_skin_path = local_skin_path + '-skinutils-' + time_suffix
+    
+    #Just move the skin, if it already exists someone is trolling us...
+    shutil.move(local_skin_path, backup_skin_path)
+    
+    #And now do the real copy
+    copy_skin_to_userdata(ask_user=False)
+    
+    #Inform the user about the operation...
+    d = xbmcgui.Dialog()
+    d.ok("Notice", "Press OK and restart XBMC (one more time!).")
 
 
 #Skin was copied but XBMC was not restarted
@@ -101,19 +172,27 @@ def check_needs_restart():
     current_skin_path = get_current_skin_path()
     local_skin_path = get_local_skin_path()
     
-    #Local skin exists and does not match current skin path, restart.
+    #Local skin exists and does not match current skin path
     if os.path.isdir(local_skin_path) and current_skin_path != local_skin_path:
-        d = xbmcgui.Dialog()
-        d.ok("Notice", "Restart XBMC to complete the installation.")
-        sys.exit(1)
+        #Check if the local skin is a leftover from a previous XBMC install
+        if is_invalid_local_skin():
+            fix_invalid_local_skin()
+            sys.exit(1)
+        
+        #Local skin is correct, a restart is needed
+        else:
+            d = xbmcgui.Dialog()
+            d.ok("Notice", "Restart XBMC to complete the installation.")
+            sys.exit(1)
 
 
 def do_write_test(path):
     test_file = os.path.join(path, 'write_test.txt')
+    print test_file
     
     try:
         #Open and cleanup
-        open(test_file,'a').close()
+        open(test_file,'w').close()
         os.remove(test_file)
         return True
     
@@ -135,11 +214,12 @@ def check_skin_writability():
     check_needs_restart()
     
     #Get the current skin's path
-    skin_path = get_current_skin_path()
+    skin_path = get_local_skin_path()
     
     #Check if it's local or not (contained in userdata)
     if not skin_is_local():
         copy_skin_to_userdata()
+        sys.exit(1)
     
     #Check if this path is writable
     elif not os.access(skin_path, os.W_OK) or not do_write_test(skin_path):
