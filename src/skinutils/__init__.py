@@ -229,14 +229,14 @@ def check_skin_writability():
 
 
 def make_backup(path):
-    backup_path = path + '~'
+    backup_path = path + '-skinutilsbackup'
     #If the backup already exists, don't overwrite it
     if not os.path.exists(backup_path):
         shutil.copy(path, backup_path)
 
 
 def restore_backup(path):
-    backup_path = path + '~'
+    backup_path = path + '-skinutilsbackup'
     #Do nothing if no backup exists
     if os.path.exists(backup_path):
         os.remove(path)
