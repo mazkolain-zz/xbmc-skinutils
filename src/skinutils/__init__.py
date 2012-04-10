@@ -163,7 +163,10 @@ def fix_invalid_local_skin():
     
     #Inform the user about the operation...
     d = xbmcgui.Dialog()
-    d.ok("Notice", "Press OK and restart XBMC (one more time!).")
+    l1 = "Your local skin is not in use (probably outdated)."
+    l2 = "Press OK to apply a fix (archiving the old skin)."
+    l3 = "You will need to restart XBMC once more."
+    d.ok("Notice", l1, l2, l3)
 
 
 #Skin was copied but XBMC was not restarted
