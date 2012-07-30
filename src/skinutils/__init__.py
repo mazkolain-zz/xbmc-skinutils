@@ -15,6 +15,7 @@ import xbmc, xbmcgui
 import shutil
 import re
 from datetime import datetime
+import elementtree.ElementTree as ET
 
 
 
@@ -246,7 +247,8 @@ def restore_backup(path):
         os.rename(backup_path, path)
 
 
-def has_invalid_xml_comments(contents):
+def has_invalid_xml_comments(file):
+    contents = open(file, 'r').read()
     pattern = re.compile('<!--(.*?)-->', re.MULTILINE | re.DOTALL)
     group_pattern = re.compile('^-|--|-$')
     for match in re.finditer(pattern, contents):
@@ -254,16 +256,107 @@ def has_invalid_xml_comments(contents):
             return True
 
 
-def sanitize_xml(file, contents):
+def sanitize_xml(file):
+    contents = open(file, 'r').read()
     p = re.compile('<!--.*?-->', re.MULTILINE | re.DOTALL)
     clean_contents, num_repl = re.subn(p, '', contents)
     open(file, 'w').write(clean_contents)
 
 
-def check_file_sanity(file):
-    contents = open(file, 'r').read()
+def is_file_sane(file):
+    
         
     #Check if the file has invalid comments
     if has_invalid_xml_comments(contents):
-        make_backup(file)
+        
         sanitize_xml(file, contents)
+
+
+def install_resources():
+    pass
+
+
+class DocumentCache:
+    __cached_docs = None
+    
+    
+    def __init__(self):
+        self.__cached_docs = {}
+    
+    
+    def _check_file_exists(self, file):
+        if not os.path.isfile(file):
+            raise IOError('File not found: %s' % file)
+    
+    
+    def contains(self, file):
+        return file in self.__cached_docs
+    
+    
+    def _check_file_known(self, file):
+        if not self.contains(file):
+            raise KeyError('Unknown file: %s' % file)
+    
+    
+    def list_files(self):
+        return self.__cached_docs.keys()
+    
+    
+    def items(self):
+        return self.__cached_docs.items()
+    
+    
+    def add(self, file):
+        self._check_file_exists(file)
+        self.__cached_docs[file] = None
+    
+    
+    def read(self, file):
+        self._check_file_exists(file)
+        
+        #If there is no cached data...
+        if not self.contains(file) or self.__cached_docs[file] is None:
+            #Check if the file about to load is sane
+            if has_invalid_xml_comments(file):
+                make_backup(file)
+                sanitize_xml(file)
+            
+            #Parse the document
+            self.__cached_docs[file] = ET.parse(file)
+            
+        return self.__cached_docs[file]
+    
+    
+    def write(self, file):
+        self._check_file_known(file)
+        
+        #If there is a document in cache it may contain modifications
+        if self.__cached_docs[file] is not None:
+            make_backup(file)
+            self.__cached_docs[file].write(file)
+    
+    
+    def write_all(self):
+        for item in self.__cached_docs:
+            self.write(item)
+    
+    
+    def clear(self, file):
+        self._check_file_known(file)
+        self.__cached_docs[file] = None
+        
+    
+    def clear_all(self):
+        for item in self.__cached_docs:
+            self.clear(item)
+    
+    
+    def rollback(self, file):
+        self._check_file_known(file)
+        restore_backup(file)
+        self.clear(file)
+    
+    
+    def rollback_all(self):
+        for item in self.__cached_docs:
+            self.rollback(item)

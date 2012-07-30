@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import elementtree.ElementTree as ET
-from skinutils import SkinUtilsError, check_skin_writability, make_backup, restore_backup, case_file_exists, check_file_sanity
+from skinutils import SkinUtilsError, check_skin_writability, case_file_exists, DocumentCache
 
 
 
@@ -17,16 +17,11 @@ class IncludeXmlError(SkinUtilsError):
 
 class IncludeManager:
     __installed_names = None
-    __includes = None
+    __doc_cache = None
     
     
-    def __init__(self):
-        check_skin_writability()
-        self.__installed_names = []
-    
-    
-    def _locate_includes(self):
-        include_list = {}
+    def _list_skin_include_files(self):
+        include_list = []
         skin_path = xbmc.translatePath("special://skin/")
         
         #Go into each dir. Could be 720, 1080...
@@ -35,28 +30,23 @@ class IncludeManager:
             if os.path.isdir(dir_path):
                 file = os.path.join(dir_path, "includes.xml")
                 if case_file_exists(file):
-                    include_list[file] = None
+                    include_list.append(file)
                 
                 file = os.path.join(dir_path, "Includes.xml")
                 if case_file_exists(file):
-                    include_list[file] = None
+                    include_list.append(file)
         
         return include_list
     
     
-    def _get_includes(self):
-        if self.__includes is None:
-            self.__includes = self._locate_includes()
+    def __init__(self):
+        check_skin_writability()
+        self.__installed_names = []
         
-        return self.__includes
-    
-    
-    def _get_include_xml(self, file):
-        if file in self.__includes and self.__includes[file] is None:
-            check_file_sanity(file)
-            self.__includes[file] = ET.parse(file)
-        
-        return self.__includes[file]
+        #Initialize the doc cache with found files
+        self.__doc_cache = DocumentCache()
+        for file in self._list_skin_include_files():
+            self.__doc_cache.add(file)
     
     
     def is_name_installed(self, name):
@@ -64,13 +54,13 @@ class IncludeManager:
     
     
     def add_include(self, name, node):
-        for item in self._get_includes().keys():
-            doc = self._get_include_xml(item)
+        for file in self.__doc_cache.list_files():
+            doc = self.__doc_cache.read(file)
             doc.getroot().append(node)
             self.__installed_names.append(name)
     
     
-    def install_file(self, file, commit=True):
+    def install_file(self, file, commit=True, clear=True):
         print "install include: %s" % file
         tree = ET.parse(file)
         
@@ -86,23 +76,17 @@ class IncludeManager:
             else:
                 self.add_include(name, item)
         
+        #If a save was requested
         if commit:
-            self.commit()
-    
-    
-    def commit(self):
-        for xml_file, doc in self._get_includes().items():
-            make_backup(xml_file)
-            doc.write(xml_file)
-    
-    
-    def remove_installed_names(self, commit=True):
-        for xml_file in self._get_includes().keys():
-            #Empty the xml in memory to force a reload later (if needed)
-            self.__includes[xml_file] = None
+            self.__doc_cache.write_all()
             
-            #Restore the original file
-            restore_backup(xml_file)
+            #If we where requested to clear the cached docs
+            if clear:
+                self.__doc_cache.clear_all()
+    
+    
+    def remove_installed_names(self):
+        self.__doc_cache.rollback_all()
     
     
     def __del__(self):

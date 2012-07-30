@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, make_backup, restore_backup, case_file_exists, check_file_sanity
+from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, case_file_exists, DocumentCache
 import elementtree.ElementTree as ET
 
 
@@ -19,17 +19,11 @@ class FontXmlError(SkinUtilsError):
 class FontManager:
     __installed_names = None
     __installed_fonts = None
-    __font_xml_docs = None
+    __doc_cache = None
     
     
-    def __init__(self):
-        check_skin_writability()
-        self.__installed_names = []
-        self.__installed_fonts = []
-    
-    
-    def _build_font_xml_dict(self):
-        font_xml_list = {}
+    def _list_skin_font_files(self):
+        font_xml_list = []
         skin_path = xbmc.translatePath("special://skin/")
         
         #Go into each dir. Could be 720, 1080...
@@ -39,31 +33,25 @@ class FontManager:
                 #Try with font.xml
                 file = os.path.join(dir_path, "font.xml")
                 if case_file_exists(file):
-                    font_xml_list[file] = None
+                    font_xml_list.append(file)
                 
                 #Don't try the next step on windows, wasted time
                 file = os.path.join(dir_path, "Font.xml")
                 if case_file_exists(file):
-                    font_xml_list[file] = None
+                    font_xml_list.append(file)
         
         return font_xml_list
     
     
-    def _get_font_xml_docs(self):
-        if self.__font_xml_docs is None:
-            self.__font_xml_docs = self._build_font_xml_dict()
+    def __init__(self):
+        check_skin_writability()
+        self.__installed_names = []
+        self.__installed_fonts = []
         
-        return self.__font_xml_docs
-    
-    
-    def _get_font_xml_file(self, file):
-        font_xml_docs = self.__font_xml_docs
-        
-        if file in font_xml_docs and font_xml_docs[file] is None:
-            check_file_sanity(file)
-            font_xml_docs[file] = ET.parse(file)
-        
-        return font_xml_docs[file]
+        #Initialize the doc cache with the skin's files
+        self.__doc_cache = DocumentCache()
+        for file in self._list_skin_font_files():
+            self.__doc_cache.add(file)
     
     
     def is_name_installed(self, name):
@@ -95,7 +83,7 @@ class FontManager:
             shutil.copyfile(file, dest_file)
     
     
-    def install_file(self, path, font_path, commit=True):
+    def install_file(self, path, font_path, commit=True, clear=True):
         print "user file: %s" % path
         tree = ET.parse(path)
         
@@ -120,7 +108,11 @@ class FontManager:
             
             #If save was requested
             if commit:
-                self.commit()
+                self.__doc_cache.write_all()
+                
+                #Clear cached docs after write (if requested)
+                if clear:
+                    self.__doc_cache.clear_all()
     
     
     def _add_font_attr(self, fontdef, name, value):
@@ -131,7 +123,7 @@ class FontManager:
     
     
     def add_font(self, name, filename, size, style="", aspect="", linespacing=""):
-        font_xml_files = self._get_font_xml_docs().keys()
+        font_xml_files = self.__doc_cache.list_files()
         
         #Unlikely to happen, but who knows...
         if len(font_xml_files) == 0:
@@ -147,7 +139,7 @@ class FontManager:
             #Iterate over all skin font files
             for font_xml in font_xml_files:
                 print "font file:  %s" % font_xml
-                font_doc = self._get_font_xml_file(font_xml)
+                font_doc = self.__doc_cache.read(font_xml)
                 root = font_doc.getroot()
                 
                 #Iterate over all the fontsets on the file
@@ -183,23 +175,12 @@ class FontManager:
                     last.tail = "\n\t\t"
     
     
-    def commit(self):
-        for xml_file,doc in self._get_font_xml_docs().items():
-            make_backup(xml_file)
-            doc.write(xml_file)
-    
-    
     def remove_font(self, name):
         pass
     
     
-    def remove_installed_names(self, commit=True):
-        for xml_file in self._get_font_xml_docs().keys():
-            #Empty the xml in memory to force a reload later (if needed)
-            self.__font_xml_docs[xml_file] = None
-            
-            #Restore the original file
-            restore_backup(xml_file)
+    def remove_installed_names(self):
+        self.__doc_cache.rollback_all()
     
     
     def remove_installed_fonts(self):
