@@ -83,38 +83,6 @@ class FontManager:
             shutil.copyfile(file, dest_file)
     
     
-    def install_file(self, path, font_path, commit=True, clear=True):
-        print "user file: %s" % path
-        tree = ET.parse(path)
-        
-        #Handle only the first fontset
-        fontset = tree.getroot().find("fontset")
-        if fontset:
-            #Every font definition inside it
-            for item in fontset.findall("font"):
-                name = self._get_font_attr(item, "name")
-                if name is None:
-                    raise FontXmlError("Malformed XML: No name for font definition.")
-                
-                elif not self.is_name_installed(name):
-                    self.add_font(
-                        name,
-                        os.path.join(font_path, self._get_font_attr(item, "filename")),
-                        self._get_font_attr(item, "size"),
-                        self._get_font_attr(item, "style"),
-                        self._get_font_attr(item, "aspect"),
-                        self._get_font_attr(item, "linespacing")
-                    )
-            
-            #If save was requested
-            if commit:
-                self.__doc_cache.write_all()
-                
-                #Clear cached docs after write (if requested)
-                if clear:
-                    self.__doc_cache.clear_all()
-    
-    
     def _add_font_attr(self, fontdef, name, value):
         attr = ET.SubElement(fontdef, name)
         attr.text = value
@@ -122,57 +90,111 @@ class FontManager:
         return attr
     
     
-    def add_font(self, name, filename, size, style="", aspect="", linespacing=""):
-        font_xml_files = self.__doc_cache.list_files()
+    def _install_font_def(self, skin_file, name, filename, size, style="", aspect="", linespacing=""):
+        #Add it to the registry
+        self.__installed_names.append(name)
         
-        #Unlikely to happen, but who knows...
-        if len(font_xml_files) == 0:
-            xbmc.log("Cannot add_font(). Current skin has no font definition files!")
+        #Get the parsed skin font file
+        font_doc = self.__doc_cache.read(skin_file)
         
-        elif self.is_name_installed(name):
-            xbmc.log("Font name '%s' was already installed, skipping." % name)
-        
-        else:
-            #Add it to the registry
-            self.__installed_names.append(name)
+        #Iterate over all the fontsets on the file
+        for fontset in font_doc.getroot().findall("fontset"):
+            fontset.findall("font")[-1].tail = "\n\t\t"
+            fontdef = ET.SubElement(fontset, "font")
+            fontdef.text, fontdef.tail = "\n\t\t\t", "\n\t"
             
-            #Iterate over all skin font files
-            for font_xml in font_xml_files:
-                print "font file:  %s" % font_xml
-                font_doc = self.__doc_cache.read(font_xml)
-                root = font_doc.getroot()
+            self._add_font_attr(fontdef, "name", name)
+            
+            #We get the full file path to the font, so let's basename
+            self._add_font_attr(fontdef, "filename", os.path.basename(filename))
+            self._copy_font_file(filename)
+            
+            last = self._add_font_attr(fontdef, "size", size)
+            
+            if style:
+                if style in ["normal", "bold", "italics", "bolditalics"]:
+                    last = self._add_font_attr(fontdef, "style", style)
                 
-                #Iterate over all the fontsets on the file
-                for fontset in root.findall("fontset"):
-                    fontset.findall("font")[-1].tail = "\n\t\t"
-                    fontdef = ET.SubElement(fontset, "font")
-                    fontdef.text, fontdef.tail = "\n\t\t\t", "\n\t"
-                    
-                    self._add_font_attr(fontdef, "name", name)
-                    
-                    #We get the full file path to the font, so let's basename
-                    self._add_font_attr(fontdef, "filename", os.path.basename(filename))
-                    self._copy_font_file(filename)
-                    
-                    last = self._add_font_attr(fontdef, "size", size)
-                    
-                    if style:
-                        if style in ["normal", "bold", "italics", "bolditalics"]:
-                            last = self._add_font_attr(fontdef, "style", style)
-                        
-                        else:
-                            raise FontXmlError(
-                                "Font '%s' has an invalid style definition: %s"
-                                % (name, style)
-                            )
-                    
-                    if aspect:
-                        last = self._add_font_attr(fontdef, "aspect", aspect)
-                    
-                    if linespacing:
-                        last = self._add_font_attr(fontdef, "linespacing", linespacing)
-                    
-                    last.tail = "\n\t\t"
+                else:
+                    raise FontXmlError(
+                        "Font '%s' has an invalid style definition: %s"
+                        % (name, style)
+                    )
+            
+            if aspect:
+                last = self._add_font_attr(fontdef, "aspect", aspect)
+            
+            if linespacing:
+                last = self._add_font_attr(fontdef, "linespacing", linespacing)
+            
+            last.tail = "\n\t\t"
+    
+    
+    def _install_file(self, doc_cache, user_file, skin_file, font_path):
+        user_doc = doc_cache.read(user_file)
+        
+        #Handle only the first fontset
+        fontset = user_doc.getroot().find("fontset")
+        if fontset:
+            #Every font definition inside it
+            for item in fontset.findall("font"):
+                name = self._get_font_attr(item, "name")
+                
+                #Basic check for malformed defs.
+                if name is None:
+                    raise FontXmlError("Malformed XML: No name for font definition.")
+                
+                #Omit already defined fonts
+                elif not self.is_name_installed(name):
+                    font_file_path = os.path.join(
+                        font_path, self._get_font_attr(item, "filename")
+                    )
+                    self._install_font_def(
+                        skin_file,
+                        name,
+                        font_file_path,
+                        self._get_font_attr(item, "size"),
+                        self._get_font_attr(item, "style"),
+                        self._get_font_attr(item, "aspect"),
+                        self._get_font_attr(item, "linespacing")
+                    )
+    
+    
+    def _get_res_folder(self, path):
+        return os.path.basename(os.path.dirname(path))
+    
+    
+    def _get_res_filename(self, res_folder, user_file):
+        path, ext = os.path.splitext(user_file)
+        return path + '-' + res_folder + ext
+    
+    
+    def install_file(self, user_file, font_path, commit=True, clear=True):
+        doc_cache = DocumentCache()
+        
+        #If the file does not exist the following will fail
+        doc_cache.add(user_file)
+        
+        #Install the file into every cached skin font file
+        for skin_file in self.__doc_cache.list_files():
+            res_folder = self._get_res_folder(skin_file)
+            res_file = self._get_res_filename(res_folder, user_file)
+            
+            #If an specific res file exists...
+            if os.path.isfile(res_file):
+                self._install_file(doc_cache, res_file, skin_file, font_path)
+            
+            #Otherwise use the dafault fallback
+            else:
+                self._install_file(doc_cache, user_file, skin_file, font_path)
+        
+        #If save was requested
+        if commit:
+            self.__doc_cache.write_all()
+            
+            #Clear cached docs after write (if requested)
+            if clear:
+                self.__doc_cache.clear_all()
     
     
     def remove_font(self, name):
