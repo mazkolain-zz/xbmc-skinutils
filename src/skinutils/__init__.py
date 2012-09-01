@@ -241,10 +241,18 @@ def make_backup(path):
 
 def restore_backup(path):
     backup_path = path + '-skinutilsbackup'
+    
     #Do nothing if no backup exists
     if os.path.exists(backup_path):
-        os.remove(path)
-        os.rename(backup_path, path)
+        
+        #os.rename is atomic on unix, and it will overwrite silently
+        if os.name != 'nt':
+            os.rename(backup_path, path)
+            
+        #Windows will complain if the file exists
+        else:
+            os.remove(path)
+            os.rename(backup_path, path)
 
 
 def has_invalid_xml_comments(file):
