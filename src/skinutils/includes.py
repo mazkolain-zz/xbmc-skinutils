@@ -5,7 +5,7 @@ Created on 09/08/2011
 '''
 import os
 import xbmc
-import elementtree.ElementTree as ET
+import xml.etree.ElementTree as ET
 from skinutils import SkinUtilsError, check_skin_writability, case_file_exists, DocumentCache
 
 

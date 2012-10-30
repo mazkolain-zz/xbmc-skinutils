@@ -15,7 +15,7 @@ import xbmc, xbmcgui
 import shutil
 import re
 from datetime import datetime
-import elementtree.ElementTree as ET
+import xml.etree.ElementTree as ET
 
 
 

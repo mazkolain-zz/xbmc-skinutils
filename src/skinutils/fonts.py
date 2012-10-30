@@ -7,7 +7,7 @@ import os
 import xbmc
 import shutil
 from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, case_file_exists, DocumentCache
-import elementtree.ElementTree as ET
+import xml.etree.ElementTree as ET
 
 
 
