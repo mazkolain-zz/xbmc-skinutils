@@ -89,5 +89,9 @@ class IncludeManager:
         self.__doc_cache.rollback_all()
     
     
-    def __del__(self):
+    def cleanup(self):
         self.remove_installed_names()
+    
+    
+    def __del__(self):
+        self.cleanup()
