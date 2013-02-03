@@ -168,6 +168,7 @@ def fix_invalid_local_skin():
     l2 = "Press OK to apply a fix (archiving the old skin)."
     l3 = "You will need to restart XBMC once more."
     d.ok("Notice", l1, l2, l3)
+    sys.exit()
 
 
 #Skin was copied but XBMC was not restarted
@@ -181,13 +182,12 @@ def check_needs_restart():
         #Check if the local skin is a leftover from a previous XBMC install
         if is_invalid_local_skin():
             fix_invalid_local_skin()
-            sys.exit(1)
         
         #Local skin is correct, a restart is needed
         else:
             d = xbmcgui.Dialog()
             d.ok("Notice", "Restart XBMC to complete the installation.")
-            sys.exit(1)
+            sys.exit()
 
 
 def do_write_test(path):
@@ -223,13 +223,12 @@ def check_skin_writability():
     #Check if it's local or not (contained in userdata)
     if not skin_is_local():
         copy_skin_to_userdata()
-        sys.exit(1)
+        sys.exit()
     
     #Check if this path is writable
     elif not os.access(skin_path, os.W_OK) or not do_write_test(skin_path):
         d = xbmcgui.Dialog()
-        d.ok("Fatal Error", "Skin directory is not writable.")
-        sys.exit(2)
+        raise IOError("Skin directory is not writable.")
 
 
 def make_backup(path):
@@ -272,11 +271,9 @@ def sanitize_xml(file):
 
 
 def is_file_sane(file):
-    
         
     #Check if the file has invalid comments
     if has_invalid_xml_comments(contents):
-        
         sanitize_xml(file, contents)
 
 
