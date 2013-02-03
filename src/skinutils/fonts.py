@@ -44,12 +44,14 @@ class FontManager:
     
     
     def __init__(self):
-        check_skin_writability()
         self.__installed_names = []
         self.__installed_fonts = []
+        self.__doc_cache = DocumentCache()
+        
+        #Check if the environment is sane
+        check_skin_writability()
         
         #Initialize the doc cache with the skin's files
-        self.__doc_cache = DocumentCache()
         for file in self._list_skin_font_files():
             self.__doc_cache.add(file)
     

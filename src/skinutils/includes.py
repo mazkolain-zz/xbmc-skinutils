@@ -40,11 +40,13 @@ class IncludeManager:
     
     
     def __init__(self):
-        check_skin_writability()
         self.__installed_names = []
+        self.__doc_cache = DocumentCache()
+        
+        #Check if the environment is sane
+        check_skin_writability()
         
         #Initialize the doc cache with found files
-        self.__doc_cache = DocumentCache()
         for file in self._list_skin_include_files():
             self.__doc_cache.add(file)
     
