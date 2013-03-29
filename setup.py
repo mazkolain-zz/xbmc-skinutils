@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='XbmcSkinUtils',
-    version='0.2',
+    version='0.3',
     description='Utility package with enhancements for XBMC addons that use skins.',
     author='Mikel Azkolain',
     author_email='azkotoki@gmail.com',
