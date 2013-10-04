@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import shutil
-from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, case_file_exists, DocumentCache
+from skinutils import SkinUtilsError, check_skin_writability, reload_skin, try_remove_file, case_file_exists, DocumentCache, get_logger
 import xml.etree.ElementTree as ET
 
 
@@ -210,9 +210,8 @@ class FontManager:
     def remove_installed_fonts(self):
         for item in self.__installed_fonts:
             if not try_remove_file(item):
-                xbmc.log(
-                    "Failed removing font file '%s'. XBMC may still be using it.",
-                    xbmc.LOGWARNING
+                get_logger().error(
+                    'Failed removing font file "%s". XBMC may still be using it.' % item
                 )
     
     

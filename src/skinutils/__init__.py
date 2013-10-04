@@ -16,6 +16,7 @@ import shutil
 import re
 from datetime import datetime
 import xml.etree.ElementTree as ET
+import logging
 
 
 
@@ -27,8 +28,19 @@ def reload_skin():
     xbmc.executebuiltin("XBMC.ReloadSkin()")
 
 
+def setup_logging():
+    #Keep comaptibility with Python2.6
+    if hasattr(logging, 'NullHandler'):
+        logger = logging.getLogger('skinutils')
+        logger.addHandler(logging.NullHandler())
+    
+
+def get_logger():
+    return logging.getLogger('skinutils')
+
+
 def debug_log(msg):
-    xbmc.log(msg, xbmc.LOGDEBUG)
+    get_logger().debug(msg)
 
 
 def get_sha1_obj():
@@ -192,7 +204,7 @@ def check_needs_restart():
 
 def do_write_test(path):
     test_file = os.path.join(path, 'write_test.txt')
-    print test_file
+    get_logger().debug('performing write test: %s' % test_file)
     
     try:
         #Open and cleanup
@@ -365,3 +377,6 @@ class DocumentCache:
     def rollback_all(self):
         for item in self.__cached_docs:
             self.rollback(item)
+
+
+setup_logging()

@@ -6,7 +6,7 @@ Created on 09/08/2011
 import os
 import xbmc
 import xml.etree.ElementTree as ET
-from skinutils import SkinUtilsError, check_skin_writability, case_file_exists, DocumentCache
+from skinutils import SkinUtilsError, check_skin_writability, case_file_exists, DocumentCache, get_logger
 
 
 
@@ -63,17 +63,17 @@ class IncludeManager:
     
     
     def install_file(self, file, commit=True, clear=True):
-        print "install include: %s" % file
+        get_logger().info('install include: %s' % file)
         tree = ET.parse(file)
         
         #Handle all includes
         for item in tree.getroot().findall("include"):
             name = item.get("name")
             if name is None:
-                xbmc.log("Only named includes are supported.", xbmc.LOGWARNING)
+                get_logger().warning('Only named includes are supported.')
             
             elif self.is_name_installed(name):
-                xbmc.log("Include name '%s' already installed" % name)
+                get_logger().warning('Include name "%s" already installed' % name)
             
             else:
                 self.add_include(name, item)
