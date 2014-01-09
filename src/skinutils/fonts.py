@@ -137,7 +137,7 @@ class FontManager:
         
         #Handle only the first fontset
         fontset = user_doc.getroot().find("fontset")
-        if fontset:
+        if len(fontset):
             #Every font definition inside it
             for item in fontset.findall("font"):
                 name = self._get_font_attr(item, "name")
