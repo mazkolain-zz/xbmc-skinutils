@@ -239,7 +239,6 @@ def check_skin_writability():
     
     #Check if this path is writable
     elif not os.access(skin_path, os.W_OK) or not do_write_test(skin_path):
-        d = xbmcgui.Dialog()
         raise IOError("Skin directory is not writable.")
 
 
