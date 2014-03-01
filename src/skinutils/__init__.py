@@ -265,27 +265,33 @@ def restore_backup(path):
             os.rename(backup_path, path)
 
 
-def has_invalid_xml_comments(file):
+def is_invalid_xml(file):
+    
     contents = open(file, 'r').read()
+    
+    #Check for invalid comments
     pattern = re.compile('<!--(.*?)-->', re.MULTILINE | re.DOTALL)
     group_pattern = re.compile('^-|--|-$')
     for match in re.finditer(pattern, contents):
         if re.match(group_pattern, match.group(1)) is not None:
             return True
+    
+    #Check also for whitespace prior to declaration
+    whitespace_pattern = re.compile('^\s+', re.MULTILINE)
+    return whitespace_pattern.match(contents) is not None
 
 
 def sanitize_xml(file):
     contents = open(file, 'r').read()
+    
+    #Remove leading whitespace to declaration
+    contents = contents.lstrip()
+    
+    #Strip invalid comments
     p = re.compile('<!--.*?-->', re.MULTILINE | re.DOTALL)
     clean_contents, num_repl = re.subn(p, '', contents)
+    
     open(file, 'w').write(clean_contents)
-
-
-def is_file_sane(file):
-        
-    #Check if the file has invalid comments
-    if has_invalid_xml_comments(contents):
-        sanitize_xml(file, contents)
 
 
 def install_resources():
@@ -333,7 +339,7 @@ class DocumentCache:
         #If there is no cached data...
         if not self.contains(file) or self.__cached_docs[file] is None:
             #Check if the file about to load is sane
-            if has_invalid_xml_comments(file):
+            if is_invalid_xml(file):
                 make_backup(file)
                 sanitize_xml(file)
             
